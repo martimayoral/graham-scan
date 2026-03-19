@@ -1,7 +1,7 @@
 import { Application, Container, type FederatedPointerEvent, Graphics, Text, type TextStyleOptions } from "pixi.js"
 
-// const CANVAS_WIDTH = 1400
-// const CANVAS_HEIGHT = 1200
+const CANVAS_WIDTH = 1400
+const CANVAS_HEIGHT = 1200
 
 class Scene extends Container {
   sceneName: string
@@ -32,10 +32,30 @@ type PointLike = { x: number; y: number; angleStart?: number }
   const app = new Application()
 
   // Initialize the application
-  await app.init({ background: "#1099bb", resizeTo: window })
+  await app.init({
+    background: "#1099bb",
+    resizeTo: window,
+    resolution: Math.max(window.devicePixelRatio || 1, 1),
+    autoDensity: true,
+  })
   // Append the application canvas to the document body
   // biome-ignore lint/style/noNonNullAssertion: We know this element exists in our HTML
   document.getElementById("pixi-container")!.appendChild(app.canvas)
+
+  const viewport = new Container()
+  app.stage.addChild(viewport)
+
+  const updateViewport = () => {
+    const scale = Math.min(app.screen.width / CANVAS_WIDTH, app.screen.height / CANVAS_HEIGHT)
+    viewport.scale.set(scale)
+    viewport.position.set(
+      (app.screen.width - CANVAS_WIDTH * scale) / 2,
+      (app.screen.height - CANVAS_HEIGHT * scale) / 2
+    )
+  }
+
+  app.renderer.on("resize", updateViewport)
+  updateViewport()
 
   const defaultLevel = -3
   const levels = [
@@ -246,7 +266,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
           break
       }
 
-      app.stage.removeChild(prevScene)
+      viewport.removeChild(prevScene)
 
       switch (sceneName) {
         case "menu":
@@ -261,7 +281,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
           return
       }
       scenes.currentScene = scene
-      app.stage.addChild(scene)
+      viewport.addChild(scene)
     },
   }
   scenes.currentScene = scenes.menuScene
@@ -269,7 +289,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
   scenes.menuScene.sceneName = "menu"
   scenes.gameScene.sceneName = "game"
 
-  app.stage.addChild(scenes.currentScene)
+  viewport.addChild(scenes.currentScene)
 
   const baseSize = 100
 
@@ -670,8 +690,8 @@ type PointLike = { x: number; y: number; angleStart?: number }
     }
 
     // Move container to the center
-    container.x = app.screen.width / 2
-    container.y = app.screen.height / 2
+    container.x = CANVAS_WIDTH / 2
+    container.y = CANVAS_HEIGHT / 2
 
     // Center group
     container.pivot.x = container.width / 2
@@ -690,8 +710,8 @@ type PointLike = { x: number; y: number; angleStart?: number }
     })
     levelselectText.anchor.set(0.5, 0.5)
     levelselectText.resolution = devicePixelRatio
-    levelselectText.x = app.screen.width / 2
-    levelselectText.y = app.screen.height / 2 - container.height / 2 - 150
+    levelselectText.x = CANVAS_WIDTH / 2
+    levelselectText.y = CANVAS_HEIGHT / 2 - container.height / 2 - 150
 
     scenes.menuScene.addChild(levelselectText)
   }
