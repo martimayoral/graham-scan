@@ -1,5 +1,8 @@
 import { Application, Container, type FederatedPointerEvent, Graphics, Text, type TextStyleOptions } from "pixi.js"
 
+// const CANVAS_WIDTH = 1400
+// const CANVAS_HEIGHT = 1200
+
 class Scene extends Container {
   sceneName: string
   bg!: Container & { floor?: Graphics }
@@ -33,23 +36,6 @@ type PointLike = { x: number; y: number; angleStart?: number }
   // Append the application canvas to the document body
   // biome-ignore lint/style/noNonNullAssertion: We know this element exists in our HTML
   document.getElementById("pixi-container")!.appendChild(app.canvas)
-
-  // // Load the bunny texture
-  // const texture = await Assets.load("/assets/bunny.png")
-
-  // // Create a bunny Sprite
-  // const bunny = new Sprite(texture)
-
-  // // Center the sprite's anchor point
-  // bunny.anchor.set(0.5)
-
-  // // Move the sprite to the center of the screen
-  // bunny.position.set(app.screen.width / 2, app.screen.height / 2)
-
-  // // Add the bunny to the stage
-  // app.stage.addChild(bunny)
-
-  // document.body.appendChild(app.canvas)
 
   const defaultLevel = -3
   const levels = [
