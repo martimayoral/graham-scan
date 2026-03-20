@@ -11,9 +11,24 @@ import {
 const CANVAS_WIDTH = 1300
 const CANVAS_HEIGHT = 1000
 
+class Bg extends Container {
+  floorBefore: Graphics
+  floorAfter: Graphics
+
+  constructor() {
+    super()
+
+    this.floorBefore = new Graphics()
+    this.addChild(this.floorBefore)
+
+    this.floorAfter = new Graphics()
+    this.addChild(this.floorAfter)
+  }
+}
+
 class Scene extends Container {
   sceneName: string
-  bg!: Container & { floor?: Graphics }
+  bg!: Bg
   gameCanvas!: Container
   ui!: Container
 
@@ -249,6 +264,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
       ],
     },
   ]
+
   var currentLevelNum = 0
 
   var scenes = {
@@ -261,18 +277,6 @@ type PointLike = { x: number; y: number; angleStart?: number }
       if (!prevScene) {
         console.error("ERROR: No current scene")
         return
-      }
-
-      switch (prevScene?.sceneName) {
-        case "menu":
-          app.ticker.add(gameTick)
-          break
-        case "game":
-          app.ticker.remove(gameTick)
-          //app.ticker.remove(endTick);
-          break
-        default:
-          break
       }
 
       viewport.removeChild(prevScene)
@@ -302,39 +306,8 @@ type PointLike = { x: number; y: number; angleStart?: number }
 
   const baseSize = 100
 
-  // UTILS
-
-  // angle between two lines
-  // const getAngle = (a: PointLike, b: PointLike, c: PointLike, d: PointLike) => {
-  //   //find vector components
-  //   const dAx = b.x - a.x
-  //   const dAy = b.y - a.y
-  //   const dBx = d.x - c.x
-  //   const dBy = d.y - c.y
-  //   var angle = Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy)
-  //   if (angle < 0) {
-  //     angle = Math.PI * 2 + angle
-  //   }
-  //   return angle /* * (180 / Math.PI) */
-  // }
-
-  // intersection between 2 lines defined by: line1: a,b. line2: c,d
-  // const IsIntersecting = (a: PointLike, b: PointLike, c: PointLike, d: PointLike) => {
-  //   const denominator = (b.x - a.x) * (d.y - c.y) - (b.y - a.y) * (d.x - c.x)
-  //   const numerator1 = (a.y - c.y) * (d.x - c.x) - (a.x - c.x) * (d.y - c.y)
-  //   const numerator2 = (a.y - c.y) * (b.x - a.x) - (a.x - c.x) * (b.y - a.y)
-
-  //   // Detect coincident lines
-  //   if (denominator === 0) return IsIntersecting(a, b, c, { x: d.x + 1, y: d.y + 1 })
-
-  //   const r = numerator1 / denominator
-  //   const s = numerator2 / denominator
-
-  //   return r >= 0 && r <= 1 && s >= 0 && s <= 1
-  // }
-
   // GAME
-  scenes.gameScene.bg = new Container()
+  scenes.gameScene.bg = new Bg()
   scenes.gameScene.addChild(scenes.gameScene.bg)
 
   scenes.gameScene.gameCanvas = new Container()
@@ -350,13 +323,6 @@ type PointLike = { x: number; y: number; angleStart?: number }
     fontVariant: "small-caps",
     fill: 0xffffff,
   }
-
-  const createBg = () => {}
-  createBg()
-
-  // const createUI = () => {
-  //   scenes.gameScene.ui.removeChildren()
-  // }
 
   const points: DataPoint[] = []
   let draggedPoint: DataPoint | null = null
@@ -429,6 +395,8 @@ type PointLike = { x: number; y: number; angleStart?: number }
 
     draggedPoint.data = event.data
     updateDraggedPoint(draggedPoint, event)
+
+    gameTick()
   }
 
   const drawPoint = (x: number, y: number, d?: number) => {
@@ -512,7 +480,6 @@ type PointLike = { x: number; y: number; angleStart?: number }
 
     scenes.gameScene.gameCanvas.removeChildren()
     scenes.gameScene.ui.removeChildren()
-    scenes.gameScene.bg.removeChildren()
 
     points.length = 0
 
@@ -533,24 +500,43 @@ type PointLike = { x: number; y: number; angleStart?: number }
       end.other = start
     })
 
-    //CheckPoints()
+    gameTick()
   }
 
-  const createGround = (corners: PointLike[]) => {
+  const createGroundBefore = (corners: PointLike[]) => {
+    scenes.gameScene.bg.floorBefore.clear()
+
+    const bounds = {
+      xMin: Infinity,
+      xMax: -Infinity,
+      yMin: Infinity,
+      yMax: -Infinity,
+    }
+
+    corners.forEach((corner) => {
+      if (corner.x < bounds.xMin) bounds.xMin = corner.x
+      if (corner.x > bounds.xMax) bounds.xMax = corner.x
+      if (corner.y < bounds.yMin) bounds.yMin = corner.y
+      if (corner.y > bounds.yMax) bounds.yMax = corner.y
+    })
+
+    // console.log(bounds)
+    scenes.gameScene.bg.floorBefore.rect(bounds.xMin, bounds.yMin, bounds.xMax - bounds.xMin, bounds.yMax - bounds.yMin)
+    scenes.gameScene.bg.floorBefore.fill(0x505050)
+  }
+
+  const createGroundAfter = (corners: PointLike[]) => {
     //console.log(corners)
     const path: number[] = []
-
-    const floor = new Graphics()
-    scenes.gameScene.bg.floor = floor
-    scenes.gameScene.bg.addChild(floor)
+    scenes.gameScene.bg.floorAfter.clear()
 
     corners.forEach((corner) => {
       path.push(corner.x)
       path.push(corner.y)
     })
 
-    floor.poly(path)
-    floor.fill(0x505050)
+    scenes.gameScene.bg.floorAfter.poly(path)
+    scenes.gameScene.bg.floorAfter.fill(0x5050ff)
   }
 
   // function GetCorners(walls: { start: PointLike; end: PointLike }[]) {
@@ -628,8 +614,6 @@ type PointLike = { x: number; y: number; angleStart?: number }
   }
 
   const gameTick = () => {
-    scenes.gameScene.bg.removeChildren()
-
     const output = GetConvexHull(points)
 
     var i = 0
@@ -642,7 +626,8 @@ type PointLike = { x: number; y: number; angleStart?: number }
         point.UpdateText("")
       }
     })
-    createGround(output)
+    createGroundBefore(output)
+    createGroundAfter(output)
   }
 
   // MENU
@@ -673,9 +658,8 @@ type PointLike = { x: number; y: number; angleStart?: number }
     const button = new ContainerWithCircle()
 
     button.circle = new Graphics()
-    button.circle.beginFill(0xffffff)
-    button.circle.drawRect(-size / 2, -size / 2, size, size)
-    button.circle.endFill()
+    button.circle.rect(-size / 2, -size / 2, size, size)
+    button.circle.fill(0xffffff)
 
     // if (!isMobile.any) button.circle.filters = [new BlurFilter(2)]
     button.circle.tint = colors[type]
