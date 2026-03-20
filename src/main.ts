@@ -154,11 +154,11 @@ type PointLike = { x: number; y: number; angleStart?: number }
         },
         {
           start: { x: 500, y: 100 },
-          end: { x: 500, y: 200 },
+          end: { x: 500, y: 250 },
         },
         {
-          start: { x: 500, y: 200 },
-          end: { x: 800, y: 300 },
+          start: { x: 500, y: 250 },
+          end: { x: 800, y: 250 },
         },
         {
           start: { x: 100, y: 750 },
@@ -169,12 +169,8 @@ type PointLike = { x: number; y: number; angleStart?: number }
           end: { x: 100, y: 250 },
         },
         {
-          start: { x: 100, y: 750 },
-          end: { x: 250, y: 750 },
-        },
-        {
           start: { x: 250, y: 850 },
-          end: { x: 250, y: 750 },
+          end: { x: 100, y: 750 },
         },
         {
           start: { x: 250, y: 850 },
@@ -201,7 +197,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
           end: { x: 800, y: 350 },
         },
         {
-          start: { x: 800, y: 300 },
+          start: { x: 800, y: 250 },
           end: { x: 800, y: 350 },
         },
       ],
@@ -332,6 +328,10 @@ type PointLike = { x: number; y: number; angleStart?: number }
   scenes.gameScene.splitDivider = new Graphics()
   scenes.gameScene.splitDivider.eventMode = "static"
   scenes.gameScene.splitDivider.cursor = "ew-resize"
+  scenes.gameScene.splitDivider.on("mouseover", () => (scenes.gameScene.splitDivider.alpha = 0.5))
+  scenes.gameScene.splitDivider.on("mouseout", () => {
+    if (!dividerDragging) scenes.gameScene.splitDivider.alpha = 1
+  })
   scenes.gameScene.splitDivider.on("pointerdown", (event: FederatedPointerEvent) => {
     dividerDragging = true
     scenes.gameScene.splitDivider.alpha = 0.5
@@ -352,7 +352,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
   let draggedPoint: DataPoint | null = null
 
   const DRAG_PICK_PADDING = 20
-  const DIVIDER_BAR_WIDTH = 12
+  const DIVIDER_BAR_WIDTH = 10
   let splitX = CANVAS_WIDTH / 2
   let dividerDragging = false
 
