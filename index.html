@@ -18,8 +18,18 @@
 <style>
     html,
     body {
+        background: black;
+    }
+
+    html.in-iframe,
+    html.in-iframe body {
         background: transparent;
     }
 </style>
+<script>
+    if (window.self !== window.top) {
+        document.documentElement.classList.add('in-iframe');
+    }
+</script>
 
 </html>
