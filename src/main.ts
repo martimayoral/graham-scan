@@ -1,4 +1,4 @@
-import { Application, Container, type FederatedPointerEvent, Graphics, Text, type TextStyleOptions } from "pixi.js"
+import { Application, Container, type FederatedPointerEvent, Graphics, Rectangle, Text, type TextStyleOptions } from "pixi.js"
 
 const CANVAS_WIDTH = 1300
 const CANVAS_HEIGHT = 1000
@@ -21,6 +21,7 @@ class DataPoint extends Container {
   UpdateText!: (num: number | string) => void
   data!: FederatedPointerEvent | null
   dragging!: boolean
+  dragRadius!: number
   line!: Container
   other!: DataPoint
 }
@@ -350,39 +351,76 @@ type PointLike = { x: number; y: number; angleStart?: number }
   // }
 
   const points: DataPoint[] = []
+  let draggedPoint: DataPoint | null = null
 
-  function onDragStart(this: DataPoint, event: FederatedPointerEvent) {
-    // store a reference to the data
-    // the reason for this is because of multitouch
-    // we want to track the movement of this particular touch
-    this.data = event.data
-    this.alpha = 0.5
-    this.dragging = true
+  const DRAG_PICK_PADDING = 20
+
+  const getClosestPoint = (position: PointLike): DataPoint | null => {
+    let closestPoint: DataPoint | null = null
+    let closestDistance = Number.POSITIVE_INFINITY
+
+    points.forEach((point) => {
+      const hitRadius = point.dragRadius + DRAG_PICK_PADDING
+      const dx = point.x - position.x
+      const dy = point.y - position.y
+      const distance = dx * dx + dy * dy
+
+      if (distance <= hitRadius * hitRadius && distance < closestDistance) {
+        closestDistance = distance
+        closestPoint = point
+      }
+    })
+
+    return closestPoint
   }
 
-  function onDragEnd(this: DataPoint) {
-    this.alpha = 1
-    this.dragging = false
-    // set the interaction data to null
-    this.data = null
+  const updateLine = (point: DataPoint) => {
+    scenes.gameScene.gameCanvas.removeChild(point.line)
+
+    const line = drawLine({ x: point.x, y: point.y }, point.other)
+    point.line = line
+    point.other.line = line
   }
 
-  function onDragMove(this: DataPoint) {
-    if (this.dragging && this.data && this.parent) {
-      const newPosition = this.data.getLocalPosition(this.parent)
-      newPosition.x = Math.round(newPosition.x / 50) * 50
-      newPosition.y = Math.round(newPosition.y / 50) * 50
+  const updateDraggedPoint = (point: DataPoint, event: FederatedPointerEvent) => {
+    const newPosition = event.getLocalPosition(scenes.gameScene.ui)
+    newPosition.x = Math.round(newPosition.x / 50) * 50
+    newPosition.y = Math.round(newPosition.y / 50) * 50
 
-      this.x = newPosition.x
-      this.y = newPosition.y
+    point.x = newPosition.x
+    point.y = newPosition.y
 
-      scenes.gameScene.gameCanvas.removeChild(this.line)
-      scenes.gameScene.gameCanvas.removeChild(this.other.line)
-      this.line = drawLine({ x: this.x, y: this.y }, this.other)
-      this.other.line = drawLine({ x: this.other.x, y: this.other.y }, this)
+    updateLine(point)
+    point.text.text = `${Math.floor(point.x)}, ${Math.floor(point.y)}\n\n`
+  }
 
-      this.text.text = `${Math.floor(this.x)}, ${Math.floor(this.y)}\n\n`
-    }
+  function onDragStart(event: FederatedPointerEvent) {
+    const point = getClosestPoint(event.getLocalPosition(scenes.gameScene.ui))
+
+    if (!point) return
+
+    draggedPoint = point
+    point.data = event.data
+    point.alpha = 0.5
+    point.dragging = true
+
+    updateDraggedPoint(point, event)
+  }
+
+  function onDragEnd() {
+    if (!draggedPoint) return
+
+    draggedPoint.alpha = 1
+    draggedPoint.dragging = false
+    draggedPoint.data = null
+    draggedPoint = null
+  }
+
+  function onDragMove(event: FederatedPointerEvent) {
+    if (!draggedPoint?.dragging) return
+
+    draggedPoint.data = event.data
+    updateDraggedPoint(draggedPoint, event)
   }
 
   const drawPoint = (x: number, y: number, d?: number) => {
@@ -395,6 +433,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
     scenes.gameScene.ui.addChild(point)
     point.x = x
     point.y = y
+    point.dragRadius = diameter
 
     point.graphic = new Graphics()
     point.addChild(point.graphic)
@@ -441,6 +480,15 @@ type PointLike = { x: number; y: number; angleStart?: number }
     return line
   }
 
+  scenes.gameScene.ui.eventMode = "static"
+  scenes.gameScene.ui.hitArea = new Rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+  scenes.gameScene.ui.on("pointerdown", onDragStart)
+
+  app.stage.eventMode = "static"
+  app.stage.on("globalpointermove", onDragMove)
+  app.stage.on("pointerup", onDragEnd)
+  app.stage.on("pointerupoutside", onDragEnd)
+
   // var middlePoint
 
   const initGame = (num?: number) => {
@@ -466,25 +514,15 @@ type PointLike = { x: number; y: number; angleStart?: number }
       const start = drawPoint(w.start.x, w.start.y, 20)
       const end = drawPoint(w.end.x, w.end.y, 20)
 
-      start.eventMode = "static"
-      start.interactive = true
+      start.eventMode = "none"
+      start.interactive = false
       start.line = line
       start.other = end
-      start
-        .on("pointerdown", onDragStart)
-        .on("pointerup", onDragEnd)
-        .on("pointerupoutside", onDragEnd)
-        .on("pointermove", onDragMove)
 
-      end.eventMode = "static"
-      end.interactive = true
+      end.eventMode = "none"
+      end.interactive = false
       end.line = line
       end.other = start
-      end
-        .on("pointerdown", onDragStart)
-        .on("pointerup", onDragEnd)
-        .on("pointerupoutside", onDragEnd)
-        .on("pointermove", onDragMove)
     })
 
     //CheckPoints()
