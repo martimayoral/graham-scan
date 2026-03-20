@@ -1,4 +1,12 @@
-import { Application, Container, type FederatedPointerEvent, Graphics, Rectangle, Text, type TextStyleOptions } from "pixi.js"
+import {
+  Application,
+  Container,
+  type FederatedPointerEvent,
+  Graphics,
+  Rectangle,
+  Text,
+  type TextStyleOptions,
+} from "pixi.js"
 
 const CANVAS_WIDTH = 1300
 const CANVAS_HEIGHT = 1000
