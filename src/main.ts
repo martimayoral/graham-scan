@@ -370,7 +370,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
   }
 
   const updateSplitView = () => {
-    splitX = Math.max(0, Math.min(CANVAS_WIDTH, splitX))
+    splitX = Math.max(20, Math.min(CANVAS_WIDTH - 20, splitX))
 
     scenes.gameScene.bg.beforeMask.clear()
     scenes.gameScene.bg.beforeMask.rect(0, 0, splitX, CANVAS_HEIGHT)
