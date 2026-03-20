@@ -1,7 +1,7 @@
 import { Application, Container, type FederatedPointerEvent, Graphics, Text, type TextStyleOptions } from "pixi.js"
 
-const CANVAS_WIDTH = 1400
-const CANVAS_HEIGHT = 1200
+const CANVAS_WIDTH = 1300
+const CANVAS_HEIGHT = 1000
 
 class Scene extends Container {
   sceneName: string
@@ -33,7 +33,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
 
   // Initialize the application
   await app.init({
-    background: "#1099bb",
+    backgroundAlpha: 0,
     resizeTo: window,
     resolution: Math.max(window.devicePixelRatio || 1, 1),
     autoDensity: true,
@@ -57,7 +57,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
   app.renderer.on("resize", updateViewport)
   updateViewport()
 
-  const defaultLevel = -3
+  const defaultLevel = 1
   const levels = [
     {
       canPlay: 1,
@@ -141,18 +141,18 @@ type PointLike = { x: number; y: number; angleStart?: number }
         },
         {
           start: { x: 250, y: 850 },
-          end: { x: 1300, y: 850 },
+          end: { x: 1050, y: 850 },
         },
         {
           start: { x: 550, y: 550 },
           end: { x: 300, y: 550 },
         },
         {
-          start: { x: 1300, y: 550 },
-          end: { x: 1300, y: 850 },
+          start: { x: 1050, y: 550 },
+          end: { x: 1050, y: 850 },
         },
         {
-          start: { x: 1300, y: 550 },
+          start: { x: 1050, y: 550 },
           end: { x: 1200, y: 550 },
         },
         {
@@ -339,6 +339,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
     align: "center",
     fontFamily: "Verdana",
     fontVariant: "small-caps",
+    fill: 0xffffff,
   }
 
   const createBg = () => {}
@@ -398,15 +399,15 @@ type PointLike = { x: number; y: number; angleStart?: number }
     point.graphic = new Graphics()
     point.addChild(point.graphic)
 
-    point.graphic.beginFill(0xffffff)
-    point.graphic.drawCircle(0, 0, diameter)
-    point.graphic.endFill()
+    point.graphic.circle(0, 0, diameter)
+    point.graphic.fill(0xffffff)
 
     point.text = new Text({
       text: `${x}, ${y}\n\n`,
       style: {
         fontSize: 30,
         align: "center",
+        fill: 0xffffff,
       },
     })
     point.text.x = diameter / 2
@@ -435,7 +436,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
     line.addChild(line.graphic)
 
     // line.graphic.lineStyle(20, 0xffffff, 0.8)
-    line.graphic.moveTo(start.x, start.y).lineTo(end.x, end.y).stroke({ color: 0xffffff, width: 20 })
+    line.graphic.moveTo(start.x, start.y).lineTo(end.x, end.y).stroke({ color: 0xffffff, width: 10, alpha: 0.8 })
 
     return line
   }
@@ -502,10 +503,8 @@ type PointLike = { x: number; y: number; angleStart?: number }
       path.push(corner.y)
     })
 
-    floor.beginFill(0xaaaaaa)
-    floor.drawPolygon(path)
-    floor.endFill()
-    floor.alpha = 0.75
+    floor.poly(path)
+    floor.fill(0x505050)
   }
 
   // function GetCorners(walls: { start: PointLike; end: PointLike }[]) {
@@ -590,17 +589,15 @@ type PointLike = { x: number; y: number; angleStart?: number }
     var i = 0
     points.forEach((point) => {
       if (output.includes(point)) {
-        point.graphic.tint = 0x33ff33
+        point.graphic.tint = 0xa476ff
         point.UpdateText(i++)
       } else {
-        point.graphic.tint = 0xeeeeee
+        point.graphic.tint = 0x808080
         point.UpdateText("")
       }
     })
     createGround(output)
   }
-
-  //
 
   // MENU
   const colors = [
@@ -718,7 +715,6 @@ type PointLike = { x: number; y: number; angleStart?: number }
 
   createMenu()
 
-  //
   if (defaultLevel >= 0) initGame(defaultLevel)
 
   document.addEventListener("keydown", (e) => {
