@@ -55,9 +55,12 @@ class DataPoint extends Container {
   graphic!: Graphics
   text!: Text
   UpdateText!: (num: number | string) => void
+  RenderStyle!: () => void
   data!: FederatedPointerEvent | null
   dragging!: boolean
   dragRadius!: number
+  hovered!: boolean
+  fillColor!: number
   line!: Container
   other!: DataPoint
 }
@@ -350,6 +353,9 @@ type PointLike = { x: number; y: number; angleStart?: number }
 
   const points: DataPoint[] = []
   let draggedPoint: DataPoint | null = null
+  const POINT_DEFAULT_ALPHA = 1
+  const POINT_HOVER_ALPHA = 0.7
+  const POINT_DRAG_ALPHA = 0.5
 
   const DRAG_PICK_PADDING = 20
   const DIVIDER_BAR_WIDTH = 10
@@ -447,7 +453,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
 
     draggedPoint = point
     point.data = event.data
-    point.alpha = 0.5
+    point.alpha = POINT_DRAG_ALPHA
     point.dragging = true
 
     updateDraggedPoint(point, event)
@@ -458,7 +464,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
 
     if (!draggedPoint) return
 
-    draggedPoint.alpha = 1
+    draggedPoint.alpha = draggedPoint.hovered ? POINT_HOVER_ALPHA : POINT_DEFAULT_ALPHA
     draggedPoint.dragging = false
     draggedPoint.data = null
     draggedPoint = null
@@ -489,12 +495,39 @@ type PointLike = { x: number; y: number; angleStart?: number }
     point.x = x
     point.y = y
     point.dragRadius = diameter
+    point.hovered = false
+    point.fillColor = 0xffffff
+    point.alpha = POINT_DEFAULT_ALPHA
 
     point.graphic = new Graphics()
     point.addChild(point.graphic)
 
-    point.graphic.circle(0, 0, diameter)
-    point.graphic.fill(0xffffff)
+    const renderPointStyle = () => {
+      point.graphic.clear()
+      point.graphic.circle(0, 0, diameter)
+      point.graphic.fill(point.fillColor)
+
+      if (point.hovered) {
+        point.graphic.stroke({ color: 0xffffff, width: 5, alpha: 0.75 })
+      }
+    }
+
+    point.RenderStyle = renderPointStyle
+
+    renderPointStyle()
+
+    point.eventMode = "static"
+    point.cursor = "pointer"
+    point.on("pointerover", () => {
+      point.hovered = true
+      if (!point.dragging) point.alpha = POINT_HOVER_ALPHA
+      renderPointStyle()
+    })
+    point.on("pointerout", () => {
+      point.hovered = false
+      point.alpha = point.dragging ? POINT_DRAG_ALPHA : POINT_DEFAULT_ALPHA
+      renderPointStyle()
+    })
 
     point.text = new Text({
       text: `${x}, ${y}\n\n`,
@@ -573,13 +606,9 @@ type PointLike = { x: number; y: number; angleStart?: number }
       const start = drawPoint(w.start.x, w.start.y, 20)
       const end = drawPoint(w.end.x, w.end.y, 20)
 
-      start.eventMode = "none"
-      start.interactive = false
       start.line = line
       start.other = end
 
-      end.eventMode = "none"
-      end.interactive = false
       end.line = line
       end.other = start
     })
@@ -703,10 +732,12 @@ type PointLike = { x: number; y: number; angleStart?: number }
     var i = 0
     points.forEach((point) => {
       if (output.includes(point)) {
-        point.graphic.tint = 0xa476ff
+        point.fillColor = 0xa476ff
+        point.RenderStyle()
         point.UpdateText(i++)
       } else {
-        point.graphic.tint = 0x808080
+        point.fillColor = 0x808080
+        point.RenderStyle()
         point.UpdateText("")
       }
     })
