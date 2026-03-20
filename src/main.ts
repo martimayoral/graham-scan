@@ -326,6 +326,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
   scenes.gameScene.addChild(scenes.gameScene.gameCanvas)
 
   scenes.gameScene.ui = new Container()
+  scenes.gameScene.ui.sortableChildren = true
   scenes.gameScene.addChild(scenes.gameScene.ui)
 
   scenes.gameScene.splitDivider = new Graphics()
@@ -732,10 +733,12 @@ type PointLike = { x: number; y: number; angleStart?: number }
     var i = 0
     points.forEach((point) => {
       if (output.includes(point)) {
+        point.zIndex = 1
         point.fillColor = 0xa476ff
         point.RenderStyle()
         point.UpdateText(i++)
       } else {
+        point.zIndex = 0
         point.fillColor = 0x808080
         point.RenderStyle()
         point.UpdateText("")
