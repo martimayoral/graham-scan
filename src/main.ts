@@ -97,7 +97,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
   app.renderer.on("resize", updateViewport)
   updateViewport()
 
-  const defaultLevel = 1
+  const defaultLevel = -1
   const levels = [
     {
       canPlay: 1,
@@ -296,6 +296,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
       switch (sceneName) {
         case "menu":
           createMenu()
+          window.location.hash = ""
           scene = scenes.menuScene
           break
         case "game":
@@ -592,6 +593,15 @@ type PointLike = { x: number; y: number; angleStart?: number }
       console.log(`ERROR: Level ${currentLevelNum} does not exist`)
       currentLevelNum = levels.length - 1
     }
+    if (currentLevelNum < 0) {
+      console.log(`ERROR: Level ${currentLevelNum} does not exist`)
+      currentLevelNum = 0
+    }
+
+    const scenarioHash = `#${currentLevelNum + 1}`
+    if (window.location.hash !== scenarioHash) {
+      window.history.replaceState(null, "", scenarioHash)
+    }
 
     scenes.gameScene.gameCanvas.removeChildren()
     scenes.gameScene.ui.removeChildren()
@@ -748,6 +758,18 @@ type PointLike = { x: number; y: number; angleStart?: number }
     createGroundAfter(output)
   }
 
+  const getLevelFromHash = () => {
+    const rawHash = window.location.hash.replace(/^#/, "").trim()
+    if (!rawHash) return undefined
+    if (!/^\d+$/.test(rawHash)) return undefined
+
+    const scenarioNumber = Number(rawHash)
+    const levelIndex = scenarioNumber - 1
+    if (levelIndex < 0 || levelIndex >= levels.length) return undefined
+
+    return levelIndex
+  }
+
   // MENU
   const colors = [
     // normal
@@ -863,7 +885,19 @@ type PointLike = { x: number; y: number; angleStart?: number }
 
   createMenu()
 
-  if (defaultLevel >= 0) initGame(defaultLevel)
+  const initialLevelFromHash = getLevelFromHash()
+  if (initialLevelFromHash !== undefined) {
+    initGame(initialLevelFromHash)
+  } else if (defaultLevel >= 0) {
+    initGame(defaultLevel)
+  }
+
+  window.addEventListener("hashchange", () => {
+    const levelFromHash = getLevelFromHash()
+    if (levelFromHash !== undefined) {
+      initGame(levelFromHash)
+    }
+  })
 
   document.addEventListener("keydown", (e) => {
     //console.log(scenes.currentScene.sceneName)
