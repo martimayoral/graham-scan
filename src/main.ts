@@ -14,6 +14,8 @@ const CANVAS_HEIGHT = 1000
 class Bg extends Container {
   floorBefore: Graphics
   floorAfter: Graphics
+  beforeMask: Graphics
+  afterMask: Graphics
 
   constructor() {
     super()
@@ -23,6 +25,15 @@ class Bg extends Container {
 
     this.floorAfter = new Graphics()
     this.addChild(this.floorAfter)
+
+    this.beforeMask = new Graphics()
+    this.addChild(this.beforeMask)
+
+    this.afterMask = new Graphics()
+    this.addChild(this.afterMask)
+
+    this.floorBefore.mask = this.beforeMask
+    this.floorAfter.mask = this.afterMask
   }
 }
 
@@ -31,6 +42,8 @@ class Scene extends Container {
   bg!: Bg
   gameCanvas!: Container
   ui!: Container
+  splitDivider!: Graphics
+  splitLabel!: Text
 
   constructor(sceneName: string) {
     super()
@@ -316,6 +329,17 @@ type PointLike = { x: number; y: number; angleStart?: number }
   scenes.gameScene.ui = new Container()
   scenes.gameScene.addChild(scenes.gameScene.ui)
 
+  scenes.gameScene.splitDivider = new Graphics()
+  scenes.gameScene.splitDivider.eventMode = "static"
+  scenes.gameScene.splitDivider.cursor = "ew-resize"
+  scenes.gameScene.splitDivider.on("pointerdown", (event: FederatedPointerEvent) => {
+    dividerDragging = true
+    scenes.gameScene.splitDivider.alpha = 0.5
+    event.stopPropagation()
+    setSplitFromEvent(event)
+  })
+  scenes.gameScene.addChild(scenes.gameScene.splitDivider)
+
   const textStyle: TextStyleOptions = {
     fontSize: baseSize / 1.5,
     align: "center",
@@ -328,6 +352,54 @@ type PointLike = { x: number; y: number; angleStart?: number }
   let draggedPoint: DataPoint | null = null
 
   const DRAG_PICK_PADDING = 20
+  const DIVIDER_BAR_WIDTH = 12
+  let splitX = CANVAS_WIDTH / 2
+  let dividerDragging = false
+
+  const onStopDividerDrag = () => {
+    dividerDragging = false
+    scenes.gameScene.splitDivider.alpha = 1
+  }
+
+  const updateSplitView = () => {
+    splitX = Math.max(0, Math.min(CANVAS_WIDTH, splitX))
+
+    scenes.gameScene.bg.beforeMask.clear()
+    scenes.gameScene.bg.beforeMask.rect(0, 0, splitX, CANVAS_HEIGHT)
+    scenes.gameScene.bg.beforeMask.fill(0xffffff)
+
+    scenes.gameScene.bg.afterMask.clear()
+    scenes.gameScene.bg.afterMask.rect(splitX, 0, CANVAS_WIDTH - splitX, CANVAS_HEIGHT)
+    scenes.gameScene.bg.afterMask.fill(0xffffff)
+
+    scenes.gameScene.splitDivider.clear()
+    scenes.gameScene.splitDivider
+      .rect(splitX - DIVIDER_BAR_WIDTH / 2, 0, DIVIDER_BAR_WIDTH, CANVAS_HEIGHT)
+      .fill({ color: 0xffffff, alpha: 0.9 })
+
+    scenes.gameScene.addChild(scenes.gameScene.splitDivider)
+    scenes.gameScene.splitLabel.x = splitX
+  }
+
+  scenes.gameScene.splitLabel = new Text({
+    text: "before   after  ",
+    style: {
+      fontSize: 40,
+      align: "center",
+      fontFamily: "Verdana",
+      fontVariant: "small-caps",
+      fill: 0xefefef,
+    },
+  })
+  scenes.gameScene.splitLabel.anchor.set(0.5, 1)
+  scenes.gameScene.splitLabel.y = CANVAS_HEIGHT - 16
+  scenes.gameScene.addChild(scenes.gameScene.splitLabel)
+
+  const setSplitFromEvent = (event: FederatedPointerEvent) => {
+    const position = event.getLocalPosition(scenes.gameScene)
+    splitX = position.x
+    updateSplitView()
+  }
 
   const getClosestPoint = (position: PointLike): DataPoint | null => {
     let closestPoint: DataPoint | null = null
@@ -382,6 +454,8 @@ type PointLike = { x: number; y: number; angleStart?: number }
   }
 
   function onDragEnd() {
+    onStopDividerDrag()
+
     if (!draggedPoint) return
 
     draggedPoint.alpha = 1
@@ -391,12 +465,17 @@ type PointLike = { x: number; y: number; angleStart?: number }
   }
 
   function onDragMove(event: FederatedPointerEvent) {
+    if (dividerDragging) {
+      setSplitFromEvent(event)
+      return
+    }
+
     if (!draggedPoint?.dragging) return
 
     draggedPoint.data = event.data
     updateDraggedPoint(draggedPoint, event)
 
-    gameTick()
+    updateViewer()
   }
 
   const drawPoint = (x: number, y: number, d?: number) => {
@@ -465,6 +544,8 @@ type PointLike = { x: number; y: number; angleStart?: number }
   app.stage.on("pointerup", onDragEnd)
   app.stage.on("pointerupoutside", onDragEnd)
 
+  updateSplitView()
+
   // var middlePoint
 
   const initGame = (num?: number) => {
@@ -483,6 +564,9 @@ type PointLike = { x: number; y: number; angleStart?: number }
 
     points.length = 0
 
+    splitX = CANVAS_WIDTH / 2
+    updateSplitView()
+
     levels[currentLevelNum].walls.forEach((w) => {
       const line = drawLine(w.start, w.end)
 
@@ -500,7 +584,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
       end.other = start
     })
 
-    gameTick()
+    updateViewer()
   }
 
   const createGroundBefore = (corners: PointLike[]) => {
@@ -613,7 +697,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
     return result
   }
 
-  const gameTick = () => {
+  const updateViewer = () => {
     const output = GetConvexHull(points)
 
     var i = 0
