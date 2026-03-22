@@ -8,7 +8,7 @@ import {
   type TextStyleOptions,
 } from "pixi.js"
 
-const CANVAS_WIDTH = 1300
+const CANVAS_WIDTH = 1400
 const CANVAS_HEIGHT = 1000
 
 class Bg extends Container {
@@ -103,48 +103,24 @@ type PointLike = { x: number; y: number; angleStart?: number }
       canPlay: 1,
       walls: [
         {
-          start: { x: 200, y: 200 },
-          end: { x: 500, y: 200 },
+          start: { x: 200, y: 600 },
+          end: { x: 200, y: 200 },
         },
         {
-          start: { x: 500, y: 200 },
-          end: { x: 500, y: 500 },
+          start: { x: 200, y: 600 },
+          end: { x: 400, y: 800 },
         },
         {
-          start: { x: 350, y: 400 },
-          end: { x: 500, y: 400 },
+          start: { x: 400, y: 800 },
+          end: { x: 1000, y: 800 },
         },
         {
-          start: { x: 500, y: 500 },
-          end: { x: 700, y: 500 },
+          start: { x: 1000, y: 800 },
+          end: { x: 1200, y: 600 },
         },
         {
-          start: { x: 700, y: 200 },
-          end: { x: 700, y: 500 },
-        },
-        {
-          start: { x: 700, y: 200 },
-          end: { x: 1000, y: 200 },
-        },
-        {
-          start: { x: 1000, y: 200 },
-          end: { x: 1150, y: 350 },
-        },
-        {
-          start: { x: 1150, y: 350 },
-          end: { x: 1150, y: 800 },
-        },
-        {
-          start: { x: 700, y: 800 },
-          end: { x: 1150, y: 800 },
-        },
-        {
-          start: { x: 500, y: 800 },
-          end: { x: 200, y: 800 },
-        },
-        {
-          start: { x: 200, y: 200 },
-          end: { x: 200, y: 800 },
+          start: { x: 1200, y: 600 },
+          end: { x: 1200, y: 200 },
         },
       ],
     },
@@ -565,7 +541,7 @@ type PointLike = { x: number; y: number; angleStart?: number }
     line.addChild(line.graphic)
 
     // line.graphic.lineStyle(20, 0xffffff, 0.8)
-    line.graphic.moveTo(start.x, start.y).lineTo(end.x, end.y).stroke({ color: 0xffffff, width: 10, alpha: 0.8 })
+    line.graphic.moveTo(start.x, start.y).lineTo(end.x, end.y).stroke({ color: 0x999999, width: 10 })
 
     return line
   }
